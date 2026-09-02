@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>WingbeatAI · Acoustic Spectral Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0F3D2E;
+            --primary-light: #1A5C46;
+            --primary-soft: #E8F3EF;
+            --accent: #2E7D6B;
+            --background: #F5F7FA;
+            --surface: #FFFFFF;
+            --text: #1A2A25;
+            --text-secondary: #5F7470;
+            --border: #E2E8F0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
+            --radius-lg: 32px;
+            --radius-md: 20px;
+            --radius-sm: 12px;
+            --mosquito-green: #1B5E20;
+            --mosquito-dark: #0D3328;
+            --mosquito-accent: #4CAF50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #EDF2F0;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 1rem;
+            -webkit-tap-highlight-color: transparent;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 430px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            padding: 1.5rem 1.2rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            border: 1px solid rgba(76,175,80,0.2);
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+            flex-shrink: 0;
+        }
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--mosquito-green);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+        .back-btn:active {
+            transform: scale(0.9);
+            background: #D5E8E0;
+        }
+        .back-btn i { font-size: 1.2rem; }
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--mosquito-green);
+        }
+        .header-badge {
+            background: var(--primary-soft);
+            padding: 0.4rem 0.7rem;
+            border-radius: 40px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--mosquito-green);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid rgba(76,175,80,0.2);
+            flex-shrink: 0;
+        }
+        .header-badge i { font-size: 0.7rem; }
+
+        /* Audio Section */
+        .audio-section {
+            background: #0D3328;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            flex-shrink: 0;
+            border: 1px solid rgba(76,175,80,0.3);
+        }
+        .audio-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #A5D6A7;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.8rem;
+        }
+        .audio-header i { font-size: 1rem; color: #4CAF50; }
+        .audio-visualizer {
+            width: 100%;
+            height: 60px;
+            background: #081511;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 0.5rem;
+            border: 1px solid rgba(76,175,80,0.3);
+            overflow: hidden;
+        }
+        .audio-bar {
+            width: 4px;
+            background: linear-gradient(to top, #1B5E20, #4CAF50, #A5D6A7);
+            border-radius: 2px;
+            transition: height 0.08s ease;
+            flex-shrink: 0;
+        }
+        .audio-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .btn-audio {
+            background: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0.7rem 1rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--mosquito-green);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid #C8E6C9;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-audio:active {
+            transform: scale(0.95);
+            background: #E8F5E9;
+        }
+        .btn-audio.primary {
+            background: var(--mosquito-green);
+            color: white;
+            border-color: var(--mosquito-green);
+        }
+        .btn-audio.primary:active {
+            background: var(--mosquito-dark);
+        }
+        .btn-audio i { font-size: 1rem; }
+
+        /* Spectrogram Section */
+        .spectrogram-section {
+            background: #0D3328;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            box-shadow: var(--shadow-md);
+            flex-shrink: 0;
+            border: 1px solid rgba(76,175,80,0.3);
+        }
+        .spectrogram-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #A5D6A7;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.8rem;
+        }
+        .spectrogram-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spectrogram-header-left i { font-size: 1rem; color: #4CAF50; }
+        .spectrogram-legend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            color: #A5D6A7;
+        }
+        .legend-gradient {
+            width: 40px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #1a2a25, #1B5E20, #4CAF50, #A5D6A7, #FFEB3B, #FF9800, #F44336);
+        }
+        #spectrogramCanvas {
+            width: 100%;
+            height: 300px;
+            background: #10082b;
+            border-radius: 12px;
+            border: 1px solid rgba(76,175,80,0.3);
+            display: block;
+            image-rendering: auto;
+        }
+
+        .analysis-progress {
+            height: 4px;
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 0.7rem;
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        .analysis-progress.active { opacity: 1; }
+
+        .analysis-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #4CAF50;
+            border-radius: inherit;
+            transition: width .1s linear;
+        }
+
+        /* Results Section */
+        .results-section {
+            background: #FAFCFB;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            flex-shrink: 0;
+        }
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--mosquito-green);
+            margin-bottom: 0.8rem;
+        }
+        .results-header i { font-size: 1.2rem; }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .result-table thead {
+            background: var(--mosquito-green);
+            color: white;
+        }
+        .result-table th {
+            padding: 0.7rem 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: left;
+        }
+        .result-table td {
+            padding: 0.8rem;
+            font-size: 0.9rem;
+            color: var(--text);
+            border-bottom: 1px solid #EFF3F2;
+            font-weight: 500;
+        }
+        .result-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .result-table tbody tr {
+            background: white;
+        }
+        .result-table tbody tr:nth-child(even) {
+            background: #F9FBF9;
+        }
+        .result-value {
+            font-weight: 700;
+            color: var(--mosquito-green);
+        }
+        .result-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.8rem;
+        }
+        .result-status i { color: var(--mosquito-accent); font-size: 0.7rem; }
+
+        .status-bar {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 0.4rem;
+            border-radius: 30px;
+            background: #F5F7F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .status-bar i { font-size: 0.5rem; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem 1.5rem 1.5rem;
+            max-width: 340px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #E8F5E9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            color: var(--mosquito-green);
+        }
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--mosquito-green);
+            margin-bottom: 0.7rem;
+        }
+        .modal-message {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+        .modal-close-btn {
+            background: var(--mosquito-green);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .modal-close-btn:active { background: var(--mosquito-dark); }
+
+        @media (max-width: 380px) {
+            .app-container { padding: 1rem 0.8rem 1.5rem; }
+            .header-title { font-size: 1.1rem; }
+            .btn-audio { padding: 0.6rem 0.8rem; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header">
+            <a href="#" class="back-btn" onclick="history.back()" title="Back to Dashboard">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <span class="header-title">WingbeatAI</span>
+            <div class="header-badge">
+                <i class="fas fa-wave-square"></i>
+                <span>ML</span>
+            </div>
+        </div>
+
+        <div class="audio-section">
+            <div class="audio-header">
+                <i class="fas fa-microphone"></i>
+                <span>Live Audio Input</span>
+            </div>
+            <div class="audio-visualizer" id="audioVisualizer"></div>
+            <div class="audio-controls">
+                <button class="btn-audio primary" id="recordBtn"><i class="fas fa-microphone"></i> Record</button>
+                <button class="btn-audio" id="analyzeBtn"><i class="fas fa-chart-line"></i> Analyze</button>
+                <button class="btn-audio" id="stopBtn"><i class="fas fa-stop"></i> Stop</button>
+            </div>
+        </div>
+
+        <div class="spectrogram-section">
+            <div class="spectrogram-header">
+                <div class="spectrogram-header-left">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Spectrogram</span>
+                </div>
+                <div class="spectrogram-legend">
+                    <span>Low</span>
+                    <div class="legend-gradient"></div>
+                    <span>High</span>
+                </div>
+            </div>
+            <canvas id="spectrogramCanvas"></canvas>
+            <div class="analysis-progress" id="analysisProgress">
+                <div class="analysis-progress-bar" id="analysisProgressBar"></div>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <i class="fas fa-table"></i>
+                <span>Acoustic Analysis Results</span>
+            </div>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Gender</td>
+                        <td><span class="result-value" id="genderResult">--</span></td>
+                    </tr>
+                    <tr>
+                        <td>Species</td>
+                        <td><span class="result-value" id="speciesResult">--</span></td>
+                    </tr>
+                    <tr>
+                        <td>Body Size</td>
+                        <td><span class="result-value" id="sizeResult">--</span></td>
+                    </tr>
+                    <tr>
+                        <td>Wingbeat Frequency</td>
+                        <td><span class="result-value" id="frequencyResult">--</span></td>
+                    </tr>
+                    <tr>
+                        <td>Confidence</td>
+                        <td><span class="result-value" id="confidenceResult">--</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="result-status" id="resultStatus">
+                <i class="fas fa-circle"></i>
+                <span>Awaiting recording...</span>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusMessage">
+            <i class="fas fa-circle"></i> Audio ready
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <div class="modal-icon" id="modalIcon"><i class="fas fa-wave-square"></i></div>
+            <div class="modal-title" id="modalTitle">WingbeatAI</div>
+            <div class="modal-message" id="modalMessage">Details here.</div>
+            <button class="modal-close-btn" id="modalCloseBtn">Acknowledge</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const audioVisualizer = document.getElementById('audioVisualizer');
+            const spectrogramCanvas = document.getElementById('spectrogramCanvas');
+            const recordBtn = document.getElementById('recordBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const statusMsg = document.getElementById('statusMessage');
+            const resultStatus = document.getElementById('resultStatus');
+            
+            const genderResult = document.getElementById('genderResult');
+            const speciesResult = document.getElementById('speciesResult');
+            const sizeResult = document.getElementById('sizeResult');
+            const frequencyResult = document.getElementById('frequencyResult');
+            const confidenceResult = document.getElementById('confidenceResult');
+
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+            let isRecording = false;
+            let audioContext = null;
+            let analyser = null;
+            let animationId = null;
+            let mediaStream = null;
+            let spectrogramInterval = null;
+            let spectrogramData = [];
+            const maxSpectrogramFrames = 100;
+
+            // A real spectrogram is built from the microphone FFT.
+            // No synthetic mosquito pattern is drawn before analysis.
+            const MAX_FREQ = 2000;
+            const ANALYSIS_SECONDS = 6;
+
+            const analysisProgress = document.getElementById('analysisProgress');
+            const analysisProgressBar = document.getElementById('analysisProgressBar');
+
+            let isAnalyzing = false;
+            let analysisStartedAt = 0;
+            let sourceNode = null;
+            let lastDrawTime = 0;
+
+            function colorMap(value) {
+                // Scientific false-color palette chosen to resemble the reference:
+                // deep violet background -> blue -> cyan/teal -> green -> yellow.
+                const stops = [
+                    [0.00, [13, 5, 37]],
+                    [0.10, [35, 8, 79]],
+                    [0.22, [62, 12, 112]],
+                    [0.36, [39, 47, 137]],
+                    [0.50, [20, 111, 146]],
+                    [0.63, [17, 158, 137]],
+                    [0.75, [91, 190, 104]],
+                    [0.86, [197, 210, 58]],
+                    [0.94, [247, 221, 46]],
+                    [1.00, [255, 239, 73]]
+                ];
+
+                value = Math.max(0, Math.min(1, value));
+
+                for (let i = 0; i < stops.length - 1; i++) {
+                    const a = stops[i], b = stops[i + 1];
+
+                    if (value >= a[0] && value <= b[0]) {
+                        const t = (value - a[0]) / (b[0] - a[0]);
+
+                        return [
+                            Math.round(a[1][0] + (b[1][0] - a[1][0]) * t),
+                            Math.round(a[1][1] + (b[1][1] - a[1][1]) * t),
+                            Math.round(a[1][2] + (b[1][2] - a[1][2]) * t)
+                        ];
+                    }
+                }
+
+                return stops[stops.length - 1][1];
+            }
+
+            let canvasReady = false;
+            let spectrogramFrames = [];
+            let canvasCssWidth = 0;
+            let canvasCssHeight = 0;
+
+            function setupCanvas(force = false) {
+                const rect = spectrogramCanvas.getBoundingClientRect();
+                const width = Math.max(320, Math.round(rect.width));
+                const height = Math.max(240, Math.round(rect.height));
+
+                if (canvasReady && !force &&
+                    width === canvasCssWidth && height === canvasCssHeight) {
+                    return {
+                        ctx: spectrogramCanvas.getContext('2d'),
+                        width, height,
+                        dpr: Math.min(window.devicePixelRatio || 1, 2)
+                    };
+                }
+
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                spectrogramCanvas.width = Math.round(width * dpr);
+                spectrogramCanvas.height = Math.round(height * dpr);
+
+                const ctx = spectrogramCanvas.getContext('2d', { alpha: false });
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                canvasCssWidth = width;
+                canvasCssHeight = height;
+                canvasReady = true;
+                return { ctx, width, height, dpr };
+            }
+
+            function drawAxes(ctx, width, height) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+                ctx.lineWidth = 1;
+                ctx.font = '10px Inter, sans-serif';
+                ctx.fillStyle = 'rgba(220,230,255,0.72)';
+
+                for (let f = 0; f <= MAX_FREQ; f += 500) {
+                    const y = height - (f / MAX_FREQ) * height;
+                    ctx.beginPath();
+                    ctx.moveTo(0, Math.round(y) + 0.5);
+                    ctx.lineTo(width, Math.round(y) + 0.5);
+                    ctx.stroke();
+                    ctx.fillText(
+                        f === 0 ? '0 Hz' : `${f / 1000} kHz`,
+                        7,
+                        Math.max(12, y - 4)
+                    );
+                }
+
+                // Faint time divisions, like a scientific spectrogram.
+                for (let s = 1; s < 6; s++) {
+                    const x = (s / 6) * width;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.round(x) + 0.5, 0);
+                    ctx.lineTo(Math.round(x) + 0.5, height);
+                    ctx.stroke();
+                }
+            }
+
+            function clearSpectrogram() {
+                const {ctx, width, height} = setupCanvas(true);
+
+                ctx.fillStyle = '#10082b';
+                ctx.fillRect(0, 0, width, height);
+                spectrogramFrames = [];
+
+                drawAxes(ctx, width, height);
+
+                ctx.fillStyle = 'rgba(220,230,255,0.58)';
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillText('Click Analyze to begin spectral capture', 58, height / 2);
+            }
+
+            function drawSpectrogram() {
+                const {ctx, width, height} = setupCanvas();
+
+                ctx.fillStyle = '#10082b';
+                ctx.fillRect(0, 0, width, height);
+
+                if (!spectrogramFrames.length) {
+                    drawAxes(ctx, width, height);
+                    return;
+                }
+
+                const visibleFrames = spectrogramFrames.slice(-Math.floor(width));
+                const xStart = Math.max(47, width - visibleFrames.length);
+
+                const nyquist = audioContext ? audioContext.sampleRate / 2 : 24000;
+
+                for (let x = 0; x < visibleFrames.length; x++) {
+                    const frame = visibleFrames[x];
+                    const px = xStart + x;
+                    if (px >= width) continue;
+
+                    for (let y = 0; y < height; y++) {
+                        // Slightly compressed low-frequency scale gives the
+                        // horizontal harmonic structure seen in real acoustic plots.
+                        const freq = (1 - y / height) * MAX_FREQ;
+                        const bin = Math.min(
+                            frame.length - 1,
+                            Math.max(0, Math.round((freq / nyquist) * frame.length))
+                        );
+
+                        let value = frame[bin] || 0;
+
+                        // Increase contrast around the noise floor without inventing
+                        // a frequency pattern.
+                        value = Math.max(0, (value - 0.025) / 0.975);
+                        value = Math.pow(value, 0.62);
+
+                        // A tiny vertical smoothing produces natural-looking bands
+                        // instead of single-pixel speckle.
+                        if (bin > 0 && bin < frame.length - 1) {
+                            const nearby = (frame[bin - 1] + value + frame[bin + 1]) / 3;
+                            value = Math.max(value, nearby * 0.82);
+                        }
+
+                        const rgb = colorMap(value);
+                        ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+                        ctx.fillRect(px, y, 1.2, 1);
+                    }
+                }
+
+                // Dark left margin for the frequency scale.
+                ctx.fillStyle = 'rgba(16,8,43,0.88)';
+                ctx.fillRect(0, 0, 47, height);
+                drawAxes(ctx, width, height);
+
+                ctx.fillStyle = 'rgba(220,230,255,0.68)';
+                ctx.font = '10px Inter, sans-serif';
+                ctx.fillText('Time →', width - 45, height - 8);
+            }
+
+            function addSpectralFrame(dataArray) {
+                // Store a copy. The analyzer's Uint8Array is reused each frame.
+                spectrogramFrames.push(Array.from(dataArray));
+
+                // Keep enough history for the visible canvas but don't grow forever.
+                const maxFrames = Math.max(500, Math.ceil(canvasCssWidth || 380) + 20);
+                if (spectrogramFrames.length > maxFrames) {
+                    spectrogramFrames.splice(0, spectrogramFrames.length - maxFrames);
+                }
+
+                drawSpectrogram();
+            }
+
+            function initAudioBars() {
+                audioVisualizer.innerHTML = '';
+                const numBars = 34;
+                for (let i = 0; i < numBars; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'audio-bar';
+                    bar.style.height = '3px';
+                    audioVisualizer.appendChild(bar);
+                }
+            }
+
+            function animateAudio() {
+                if (!analyser) return;
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+
+                const bars = audioVisualizer.querySelectorAll('.audio-bar');
+                const step = Math.max(1, Math.floor(dataArray.length / bars.length));
+
+                bars.forEach((bar, index) => {
+                    const value = dataArray[index * step] || 0;
+                    bar.style.height = `${Math.max(3, (value / 255) * 55)}px`;
+                });
+
+                if (isAnalyzing && performance.now() - lastDrawTime > 30) {
+                    addSpectralFrame(dataArray);
+                    lastDrawTime = performance.now();
+
+                    const elapsed = (performance.now() - analysisStartedAt) / 1000;
+                    const progress = Math.min(100, (elapsed / ANALYSIS_SECONDS) * 100);
+                    analysisProgressBar.style.width = `${progress}%`;
+
+                    if (elapsed >= ANALYSIS_SECONDS) {
+                        finishAnalysis();
+                        return;
+                    }
+                }
+
+                animationId = requestAnimationFrame(animateAudio);
+            }
+
+            async function createMicrophoneAnalyser() {
+                if (mediaStream) return;
+
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+
+                // 2048 gives a useful balance between frequency resolution and smooth scrolling.
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.18;
+                analyser.minDecibels = -90;
+                analyser.maxDecibels = -15;
+
+                sourceNode = audioContext.createMediaStreamSource(mediaStream);
+                sourceNode.connect(analyser);
+            }
+
+            async function startRecording() {
+                if (isRecording || isAnalyzing) return;
+
+                try {
+                    await createMicrophoneAnalyser();
+                    isRecording = true;
+                    updateStatus('Recording audio...', '#1B5E20');
+                    updateResultStatus('Recording in progress...', '#1565C0');
+                    clearSpectrogram();
+                    animateAudio();
+
+                    showModal(
+                        'fa-microphone',
+                        'Recording Started',
+                        'Microphone input is live. Press Stop when you are finished, then press Analyze.'
+                    );
+                } catch (error) {
+                    console.error('Audio error:', error);
+                    cleanupAudio();
+                    showModal(
+                        'fa-exclamation-triangle',
+                        'Microphone Unavailable',
+                        'Unable to access the microphone. Please allow microphone access and try again.'
+                    );
+                    updateStatus('Microphone unavailable', '#E65100');
+                }
+            }
+
+            function stopRecording() {
+                if (isAnalyzing) {
+                    isAnalyzing = false;
+                    analysisProgress.classList.remove('active');
+                    analysisProgressBar.style.width = '0%';
+                }
+
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+
+                if (audioContext) {
+                    audioContext.close().catch(() => {});
+                    audioContext = null;
+                }
+
+                sourceNode = null;
+                analyser = null;
+                isRecording = false;
+
+                const bars = audioVisualizer.querySelectorAll('.audio-bar');
+                bars.forEach(bar => bar.style.height = '3px');
+
+                updateStatus('Audio stopped', '#8A9E98');
+                updateResultStatus('Ready for analysis', '#1B5E20');
+            }
+
+            async function analyzeAudio() {
+                if (isAnalyzing) return;
+
+                try {
+                    // Analyze button now starts the actual live spectral capture.
+                    // This makes the spectrogram appear only after Analyze is clicked.
+                    if (!analyser) {
+                        await createMicrophoneAnalyser();
+                    }
+
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+
+                    isRecording = false;
+                    isAnalyzing = true;
+                    analysisStartedAt = performance.now();
+                    lastDrawTime = 0;
+
+                    clearSpectrogram();
+                    analysisProgress.classList.add('active');
+                    analysisProgressBar.style.width = '0%';
+
+                    updateStatus('Analyzing acoustic signature...', '#1565C0');
+                    updateResultStatus('Listening and building spectrogram...', '#1565C0');
+
+                    animateAudio();
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    cleanupAudio();
+                    clearSpectrogram();
+
+                    const secureContextHint = !window.isSecureContext
+                        ? ' Open this page through localhost or HTTPS so the browser can provide microphone access.'
+                        : '';
+
+                    showModal(
+                        'fa-exclamation-triangle',
+                        'Microphone Access Required',
+                        'The spectrogram uses live microphone FFT data. Allow microphone access and press Analyze again.' + secureContextHint
+                    );
+                    updateStatus('Microphone access required', '#E65100');
+                    updateResultStatus('Waiting for microphone access...', '#E65100');
+                }
+            }
+
+            function finishAnalysis() {
+                if (!isAnalyzing) return;
+
+                isAnalyzing = false;
+                analysisProgressBar.style.width = '100%';
+
+                // Demo result values remain deterministic-looking rather than changing
+                // randomly every click. Replace these with the trained model output later.
+                const gender = 'Female';
+                const speciesName = 'Aedes aegypti';
+                const size = 'Small (2.5mm)';
+                const frequency = 580;
+                const confidence = '91.8';
+
+                genderResult.textContent = gender;
+                speciesResult.textContent = speciesName;
+                sizeResult.textContent = size;
+                frequencyResult.textContent = `${frequency} Hz`;
+                confidenceResult.textContent = `${confidence}%`;
+
+                updateStatus('Analysis complete', '#1B5E20');
+                updateResultStatus('Spectral capture complete · results displayed', '#1B5E20');
+
+                setTimeout(() => {
+                    analysisProgress.classList.remove('active');
+                    cleanupAudio();
+                }, 700);
+
+                showModal(
+                    'fa-wave-square',
+                    'Analysis Complete',
+                    `Gender: ${gender}\nSpecies: ${speciesName}\nBody Size: ${size}\nWingbeat Frequency: ${frequency} Hz\nConfidence: ${confidence}%`
+                );
+            }
+
+            function cleanupAudio() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+
+                if (audioContext) {
+                    audioContext.close().catch(() => {});
+                    audioContext = null;
+                }
+
+                sourceNode = null;
+                analyser = null;
+                isRecording = false;
+            }
+
+            function init() {
+                initAudioBars();
+                clearSpectrogram();
+
+                window.addEventListener('resize', () => {
+                    canvasReady = false;
+                    if (!isAnalyzing) clearSpectrogram();
+                });
+            }
+
+            function showModal(icon, title, message) {
+                modalIcon.innerHTML = `<i class="fas ${icon}"></i>`;
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modalOverlay.classList.add('active');
+            }
+
+            function hideModal() {
+                modalOverlay.classList.remove('active');
+            }
+
+            function updateStatus(text, color = '#5F7470') {
+                statusMsg.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${text}`;
+            }
+
+            function updateResultStatus(text, color = '#5F7470') {
+                resultStatus.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${text}`;
+            }
+
+            modalCloseBtn.addEventListener('click', hideModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) hideModal();
+            });
+
+            recordBtn.addEventListener('click', startRecording);
+            stopBtn.addEventListener('click', stopRecording);
+            analyzeBtn.addEventListener('click', analyzeAudio);
+
+            setTimeout(init, 100);
+            updateStatus('Audio ready', '#5F7470');
+        })();
+    </script>
+</body>
+</html>
