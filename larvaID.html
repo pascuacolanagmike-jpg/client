@@ -332,10 +332,12 @@
             let capturedImage = null; // dataURL
 
             // Roboflow LarvaID model endpoint
-            const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1';
-            const ROBOFLOW_KEY = 'tytdJy91mpGDBEiW4mTi';
+            const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1?api_key=tytdJy91mpGDBEiW4mTi';
             const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
             const DEVICE_ID = 'LARVAID-001';
+
+            // Allowed larvaId values (must match backend)
+            const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed', 'other'];
 
             function showToast(msg) {
                 toast.textContent = msg;
@@ -426,6 +428,7 @@
                 setAnalysisLoading(true);
                 updateStatus('Analyzing...', '#1565C0');
                 try {
+                    // Convert dataURL to Blob
                     const base64 = capturedImage.split(',')[1];
                     const byteChars = atob(base64);
                     const byteNums = new Array(byteChars.length);
@@ -436,11 +439,14 @@
 
                     const resp = await fetch(ROBOFLOW_URL, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${ROBOFLOW_KEY}` },
                         body: formData
                     });
-                    if (!resp.ok) throw new Error(`Roboflow error ${resp.status}`);
+                    if (!resp.ok) {
+                        const errText = await resp.text().catch(() => '');
+                        throw new Error(`Roboflow error ${resp.status}${errText ? ': ' + errText : ''}`);
+                    }
                     const data = await resp.json();
+                    console.log('Roboflow response:', data);
                     const predictions = data.predictions || [];
                     if (predictions.length === 0) {
                         speciesResult.textContent = 'None';
@@ -451,7 +457,12 @@
                         return;
                     }
                     const top = predictions[0];
-                    const species = top.class || 'Unknown';
+                    let species = top.class || 'Unknown';
+                    // Normalize to backend allowed values
+                    species = species.toLowerCase().replace(/[^a-z]/g, '');
+                    if (!ALLOWED_LARVA.includes(species)) {
+                        species = 'other'; // fallback
+                    }
                     const confidence = (top.confidence * 100).toFixed(1);
                     speciesResult.textContent = species;
                     confidenceResult.textContent = `${confidence}%`;
@@ -483,7 +494,7 @@
                         const payload = {
                             deviceId: DEVICE_ID,
                             timestamp: new Date().toISOString(),
-                            larvaId: larvaId.toLowerCase(),
+                            larvaId: larvaId,
                             latitude: pos.coords.latitude,
                             longitude: pos.coords.longitude,
                             radius: 500
@@ -494,7 +505,10 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify(payload)
                             });
-                            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                            if (!resp.ok) {
+                                const errText = await resp.text().catch(() => '');
+                                throw new Error(`HTTP ${resp.status}${errText ? ': ' + errText : ''}`);
+                            }
                             const result = await resp.json();
                             resolve({ success: true, result });
                         } catch (err) {
