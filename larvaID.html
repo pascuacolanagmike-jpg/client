@@ -22,24 +22,16 @@
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
             --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
             --shadow-lg: 0 20px 40px rgba(0,0,0,0.12);
-            --radius-lg: 32px;
-            --radius-md: 20px;
-            --radius-sm: 12px;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
             --mosquito-green: #1B5E20;
             --mosquito-dark: #0D3328;
             --mosquito-accent: #4CAF50;
             --warning-amber: #FF8F00;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -48,42 +40,36 @@
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 1rem;
+            padding: 0.5rem;
             -webkit-tap-highlight-color: transparent;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            background-image: radial-gradient(circle at 20% 30%, rgba(76,175,80,0.03) 0%, transparent 50%),
-                              radial-gradient(circle at 80% 70%, rgba(76,175,80,0.03) 0%, transparent 50%);
+            touch-action: manipulation;
         }
 
         .app-container {
             width: 100%;
             max-width: 430px;
             background: var(--surface);
-            border-radius: var(--radius-lg);
+            border-radius: 24px;
             box-shadow: var(--shadow-lg);
             overflow: hidden;
-            padding: 1.5rem 1.2rem 2rem;
+            padding: 1rem 0.8rem 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 1rem;
             border: 1px solid rgba(76,175,80,0.2);
-            position: relative;
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0.2rem 0;
-            flex-shrink: 0;
         }
+
         .back-btn {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             background: var(--primary-soft);
             border-radius: 50%;
             display: flex;
@@ -91,457 +77,317 @@
             justify-content: center;
             color: var(--mosquito-green);
             cursor: pointer;
-            transition: all 0.2s ease;
             border: none;
-            flex-shrink: 0;
             text-decoration: none;
+            transition: all 0.2s;
         }
-        .back-btn:active {
-            transform: scale(0.9);
-            background: #D5E8E0;
-        }
-        .back-btn i {
-            font-size: 1.2rem;
-        }
+
+        .back-btn:active { transform: scale(0.9); background: #D5E8E0; }
+        .back-btn i { font-size: 1.1rem; }
+
         .header-title {
             flex: 1;
             text-align: center;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
             letter-spacing: -0.5px;
             color: var(--mosquito-green);
         }
-        .header-badge {
-            background: var(--primary-soft);
-            padding: 0.4rem 0.7rem;
-            border-radius: 40px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: var(--mosquito-green);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            border: 1px solid rgba(76,175,80,0.2);
-            flex-shrink: 0;
-        }
-        .header-badge i {
-            font-size: 0.7rem;
-        }
 
-        /* Camera Section */
         .camera-section {
             background: #0D3328;
-            border-radius: var(--radius-md);
-            padding: 0.7rem;
+            border-radius: 16px;
+            padding: 0.6rem;
             box-shadow: var(--shadow-md);
-            flex-shrink: 0;
             border: 1px solid rgba(76,175,80,0.3);
         }
+
         .camera-preview-wrapper {
             position: relative;
             width: 100%;
             aspect-ratio: 1 / 1;
             background: #081511;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 1px solid rgba(76,175,80,0.4);
         }
+
         #cameraStream {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: none;
         }
-        #cameraCanvas {
+
+        #imagePreview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+            z-index: 2;
             display: none;
         }
+
         .camera-placeholder {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #A5D6A7;
-            gap: 10px;
-            font-weight: 400;
-            font-size: 0.9rem;
+            gap: 8px;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 1rem;
         }
-        .camera-placeholder i {
-            font-size: 3rem;
-            opacity: 0.7;
-            color: #4CAF50;
-        }
+
+        .camera-placeholder i { font-size: 2.5rem; opacity: 0.7; color: #4CAF50; }
+
         .camera-controls {
             display: flex;
             justify-content: center;
-            gap: 0.6rem;
-            margin-top: 0.8rem;
+            gap: 0.4rem;
+            margin-top: 0.7rem;
             flex-wrap: wrap;
         }
+
         .btn-cam {
             background: white;
             border: none;
             border-radius: 50px;
-            padding: 0.7rem 1rem;
+            padding: 0.6rem 0.8rem;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--mosquito-green);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             cursor: pointer;
             transition: all 0.15s ease;
             border: 1px solid #C8E6C9;
             box-shadow: var(--shadow-sm);
-        }
-        .btn-cam:active {
-            transform: scale(0.95);
-            background: #E8F5E9;
-        }
-        .btn-cam.primary {
-            background: var(--mosquito-green);
-            color: white;
-            border-color: var(--mosquito-green);
-        }
-        .btn-cam.primary:active {
-            background: var(--mosquito-dark);
-        }
-        .btn-cam i {
-            font-size: 1rem;
+            min-height: 40px;
+            justify-content: center;
         }
 
-        /* Results Section */
+        .btn-cam:active { transform: scale(0.95); background: #E8F5E9; }
+        .btn-cam.primary { background: var(--mosquito-green); color: white; border-color: var(--mosquito-green); }
+        .btn-cam.primary:active { background: var(--mosquito-dark); }
+        .btn-cam i { font-size: 0.85rem; }
+        .btn-cam:disabled { opacity: 0.55; cursor: not-allowed; }
+
         .results-section {
             background: #FAFCFB;
-            border-radius: var(--radius-md);
+            border-radius: 16px;
             border: 1px solid var(--border);
-            padding: 1rem;
-            flex-shrink: 0;
+            padding: 0.8rem;
         }
+
         .results-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--mosquito-green);
-            margin-bottom: 0.8rem;
-        }
-        .results-header i {
-            font-size: 1.2rem;
-        }
-        .result-table {
-            width: 100%;
-            border-collapse: collapse;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-        }
-        .result-table thead {
-            background: var(--mosquito-green);
-            color: white;
-        }
-        .result-table th {
-            padding: 0.7rem 0.8rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-align: left;
-        }
-        .result-table td {
-            padding: 0.8rem;
-            font-size: 0.9rem;
-            color: var(--text);
-            border-bottom: 1px solid #EFF3F2;
-            font-weight: 500;
-        }
-        .result-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        .result-table tbody tr {
-            background: white;
-            transition: background 0.2s;
-        }
-        .result-table tbody tr:nth-child(even) {
-            background: #F9FBF9;
-        }
-        .result-value {
-            font-weight: 700;
-            color: var(--mosquito-green);
-        }
-        .result-badge {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            background: #E8F5E9;
-            color: var(--mosquito-green);
-        }
-        .result-status {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.8rem;
-        }
-        .result-status i {
-            color: var(--mosquito-accent);
-            font-size: 0.7rem;
+            margin-bottom: 0.6rem;
         }
 
-        /* Status Bar */
+        .result-table { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; }
+        .result-table thead { background: var(--mosquito-green); color: white; }
+        .result-table th { padding: 0.55rem 0.6rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; }
+        .result-table td { padding: 0.6rem; font-size: 0.8rem; color: var(--text); border-bottom: 1px solid #EFF3F2; font-weight: 500; }
+        .result-table tbody tr:last-child td { border-bottom: none; }
+        .result-table tbody tr:nth-child(even) { background: #F9FBF9; }
+        .result-value { font-weight: 700; color: var(--mosquito-green); }
+
         .status-bar {
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             font-weight: 500;
-            padding: 0.4rem;
+            padding: 0.35rem;
             border-radius: 30px;
             background: #F5F7F6;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .status-bar i {
-            font-size: 0.5rem;
+            gap: 5px;
         }
 
-        /* Modal */
-        .modal-overlay {
+        .status-bar i { font-size: 0.45rem; }
+
+        .hidden { display: none !important; }
+
+        .overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            inset: 0;
+            background: rgba(255,255,255,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-direction: column;
+            gap: 0.8rem;
             z-index: 1000;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.2s;
         }
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-        .modal-box {
-            background: white;
-            border-radius: 24px;
-            padding: 2rem 1.5rem 1.5rem;
-            max-width: 340px;
-            width: 90%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .modal-overlay.active .modal-box {
-            transform: scale(1);
-        }
-        .modal-icon {
-            width: 60px;
-            height: 60px;
-            background: #E8F5E9;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 2rem;
-            color: var(--mosquito-green);
-        }
-        .modal-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--mosquito-green);
-            margin-bottom: 0.7rem;
-        }
-        .modal-message {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            font-weight: 400;
-        }
-        .modal-close-btn {
-            background: var(--mosquito-green);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 0.8rem 2rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            width: 100%;
-        }
-        .modal-close-btn:active {
-            background: var(--mosquito-dark);
-        }
+        .overlay.active { opacity: 1; pointer-events: all; }
 
-        @media (max-width: 380px) {
-            .app-container {
-                padding: 1rem 0.8rem 1.5rem;
-            }
-            .header-title {
-                font-size: 1.1rem;
-            }
-            .btn-cam {
-                padding: 0.6rem 0.8rem;
-                font-size: 0.75rem;
-            }
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #E0E0E0;
+            border-top: 4px solid var(--mosquito-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
-
     <div class="app-container">
-        <!-- Header -->
         <div class="header">
-            <a href="#" class="back-btn" onclick="history.back()" title="Back to Dashboard">
-                <i class="fas fa-arrow-left"></i>
-            </a>
+            <a href="index.html" class="back-btn" title="Back to Dashboard"><i class="fas fa-arrow-left"></i></a>
             <span class="header-title">LarvaID</span>
-            <div class="header-badge">
-                <i class="fas fa-dna"></i>
-                <span>AI</span>
-            </div>
         </div>
 
-        <!-- Camera Section -->
         <div class="camera-section">
             <div class="camera-preview-wrapper">
                 <video id="cameraStream" autoplay playsinline muted></video>
-                <canvas id="cameraCanvas"></canvas>
+                <img id="imagePreview" alt="Captured larva image">
                 <div class="camera-placeholder" id="cameraPlaceholder">
                     <i class="fas fa-camera"></i>
                     <span>Point camera at larva</span>
                 </div>
             </div>
             <div class="camera-controls">
-                <button class="btn-cam primary" id="startCameraBtn"><i class="fas fa-play"></i> Start</button>
+                <button class="btn-cam primary" id="startCameraBtn"><i class="fas fa-play"></i> Live</button>
                 <button class="btn-cam" id="captureBtn"><i class="fas fa-camera"></i> Capture</button>
                 <button class="btn-cam" id="analyzeBtn"><i class="fas fa-microscope"></i> Analyze</button>
                 <button class="btn-cam" id="stopCameraBtn"><i class="fas fa-stop"></i> Stop</button>
             </div>
         </div>
 
-        <!-- Results Section -->
         <div class="results-section">
-            <div class="results-header">
-                <i class="fas fa-table"></i>
-                <span>Classification Results</span>
-            </div>
+            <div class="results-header"><i class="fas fa-table"></i><span>Classification Results</span></div>
             <table class="result-table">
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Result</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Parameter</th><th>Result</th></tr></thead>
                 <tbody>
-                    <tr>
-                        <td>Species</td>
-                        <td><span class="result-value" id="speciesResult">--</span> <span class="result-badge" id="speciesBadge" style="display:none;">Detected</span></td>
-                    </tr>
-                    <tr>
-                        <td>Estimated Age</td>
-                        <td><span class="result-value" id="ageResult">--</span></td>
-                    </tr>
-                    <tr>
-                        <td>Confidence</td>
-                        <td><span class="result-value" id="confidenceResult">--</span></td>
-                    </tr>
-                    <tr>
-                        <td>Timestamp</td>
-                        <td><span class="result-value" id="timestampResult">--</span></td>
-                    </tr>
+                    <tr><td>Species</td><td><span class="result-value" id="speciesResult">--</span></td></tr>
+                    <tr><td>Confidence</td><td><span class="result-value" id="confidenceResult">--</span></td></tr>
+                    <tr><td>Timestamp</td><td><span class="result-value" id="timestampResult">--</span></td></tr>
                 </tbody>
             </table>
-            <div class="result-status" id="resultStatus">
-                <i class="fas fa-circle"></i>
-                <span>Awaiting analysis...</span>
-            </div>
         </div>
 
-        <div class="status-bar" id="statusMessage">
-            <i class="fas fa-circle"></i> Camera ready
-        </div>
+        <div class="status-bar" id="statusMessage"><i class="fas fa-circle"></i> Ready</div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal-box">
-            <div class="modal-icon" id="modalIcon"><i class="fas fa-dna"></i></div>
-            <div class="modal-title" id="modalTitle">LarvaID</div>
-            <div class="modal-message" id="modalMessage">Details here.</div>
-            <button class="modal-close-btn" id="modalCloseBtn">Acknowledge</button>
-        </div>
+    <div class="overlay" id="analysisOverlay">
+        <div class="loader"></div>
+        <div style="font-weight:600; color:#1B5E20;">Analyzing larva...</div>
     </div>
+
+    <div class="toast" id="toast"></div>
 
     <script>
         (function() {
-            // DOM elements
             const video = document.getElementById('cameraStream');
-            const canvas = document.getElementById('cameraCanvas');
+            const imagePreview = document.getElementById('imagePreview');
             const cameraPlaceholder = document.getElementById('cameraPlaceholder');
             const startBtn = document.getElementById('startCameraBtn');
             const captureBtn = document.getElementById('captureBtn');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const stopBtn = document.getElementById('stopCameraBtn');
             const statusMsg = document.getElementById('statusMessage');
-            const resultStatus = document.getElementById('resultStatus');
-            
-            // Result elements
             const speciesResult = document.getElementById('speciesResult');
-            const speciesBadge = document.getElementById('speciesBadge');
-            const ageResult = document.getElementById('ageResult');
             const confidenceResult = document.getElementById('confidenceResult');
             const timestampResult = document.getElementById('timestampResult');
-
-            // Modal elements
-            const modalOverlay = document.getElementById('modalOverlay');
-            const modalIcon = document.getElementById('modalIcon');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalMessage = document.getElementById('modalMessage');
-            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            const analysisOverlay = document.getElementById('analysisOverlay');
+            const toast = document.getElementById('toast');
 
             let stream = null;
-            let capturedImage = null;
+            let capturedImage = null; // dataURL
 
-            function showModal(icon, title, message) {
-                modalIcon.innerHTML = `<i class="fas ${icon}"></i>`;
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                modalOverlay.classList.add('active');
+            // Roboflow LarvaID model endpoint
+            const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1';
+            const ROBOFLOW_KEY = 'tytdJy91mpGDBEiW4mTi';
+            const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
+            const DEVICE_ID = 'LARVAID-001';
+
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
             }
 
-            function hideModal() {
-                modalOverlay.classList.remove('active');
+            function updateStatus(msg, color = '#5F7470') {
+                statusMsg.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${msg}`;
             }
 
-            modalCloseBtn.addEventListener('click', hideModal);
-            modalOverlay.addEventListener('click', (e) => {
-                if (e.target === modalOverlay) hideModal();
-            });
-
-            function updateStatus(text, color = '#5F7470') {
-                statusMsg.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${text}`;
+            function setAnalysisLoading(loading) {
+                analysisOverlay.classList.toggle('active', loading);
+                [captureBtn, startBtn, stopBtn, analyzeBtn].forEach(btn => btn.disabled = loading);
+                analyzeBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> Analyzing' : '<i class="fas fa-microscope"></i> Analyze';
             }
 
-            function updateResultStatus(text, color = '#5F7470') {
-                resultStatus.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${text}`;
+            function showImagePreview(dataUrl) {
+                capturedImage = dataUrl;
+                imagePreview.src = dataUrl;
+                imagePreview.style.display = 'block';
+                video.style.display = 'none';
+                cameraPlaceholder.style.display = 'none';
+            }
+
+            function clearImagePreview() {
+                capturedImage = null;
+                imagePreview.style.display = 'none';
+                cameraPlaceholder.style.display = 'flex';
+            }
+
+            async function startCamera() {
+                stopStream();
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    showToast('Camera requires HTTPS or localhost');
+                    return;
+                }
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
+                        audio: false
+                    });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    cameraPlaceholder.style.display = 'none';
+                    imagePreview.style.display = 'none';
+                    capturedImage = null;
+                    updateStatus('Camera active', '#1B5E20');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Camera permission denied');
+                }
             }
 
             function stopStream() {
@@ -550,101 +396,124 @@
                     stream = null;
                 }
                 video.style.display = 'none';
-                cameraPlaceholder.style.display = 'flex';
+                if (!capturedImage) {
+                    cameraPlaceholder.style.display = 'flex';
+                    imagePreview.style.display = 'none';
+                }
                 updateStatus('Camera off', '#8A9E98');
-            }
-
-            async function startCamera() {
-                stopStream();
-                if (!navigator.mediaDevices?.getUserMedia) {
-                    showModal('fa-exclamation-triangle', 'Camera Unavailable', 'Camera access requires HTTPS or localhost.');
-                    return;
-                }
-                try {
-                    const constraints = {
-                        audio: false,
-                        video: { 
-                            facingMode: { ideal: 'environment' },
-                            width: { ideal: 1080 },
-                            height: { ideal: 1080 }
-                        }
-                    };
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    video.srcObject = stream;
-                    video.style.display = 'block';
-                    cameraPlaceholder.style.display = 'none';
-                    updateStatus('Camera active', '#1B5E20');
-                } catch (error) {
-                    console.error(error);
-                    showModal('fa-lock', 'Permission Required', 'Camera permission was denied. Please allow access in your browser settings.');
-                    updateStatus('Camera unavailable', '#E65100');
-                }
             }
 
             function captureImage() {
                 if (!stream || !video.srcObject) {
-                    showModal('fa-exclamation-circle', 'No Camera', 'Please start the camera first before capturing.');
+                    showToast('Please start the camera first');
                     return;
                 }
-                
-                const videoWidth = video.videoWidth;
-                const videoHeight = video.videoHeight;
-                
-                canvas.width = videoWidth;
-                canvas.height = videoHeight;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
-                
-                capturedImage = canvas.toDataURL('image/jpeg', 0.9);
-                
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 640;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                showImagePreview(dataUrl);
                 updateStatus('Image captured', '#1B5E20');
-                updateResultStatus('Image captured · ready for analysis', '#1B5E20');
-                
-                showModal('fa-check-circle', 'Capture Successful', 'Larva image has been captured and is ready for analysis. Press "Analyze" to process.');
+                showToast('Image captured');
             }
 
-            function analyzeImage() {
+            async function analyzeImage() {
                 if (!capturedImage) {
-                    showModal('fa-exclamation-circle', 'No Image', 'Please capture an image first using the "Capture" button.');
+                    showToast('Please capture an image first');
                     return;
                 }
-                
+                setAnalysisLoading(true);
                 updateStatus('Analyzing...', '#1565C0');
-                updateResultStatus('Processing image...', '#1565C0');
-                
-                // Simulate AI processing
-                setTimeout(() => {
-                    // Simulated results
-                    const species = ['Aedes aegypti', 'Aedes albopictus', 'Culex quinquefasciatus', 'Anopheles stephensi'];
-                    const randomSpecies = species[Math.floor(Math.random() * species.length)];
-                    const randomAge = (Math.random() * 5 + 1).toFixed(1);
-                    const randomConfidence = (Math.random() * 15 + 85).toFixed(1);
-                    
-                    speciesResult.textContent = randomSpecies;
-                    speciesBadge.style.display = 'inline-block';
-                    speciesBadge.textContent = 'Detected';
-                    ageResult.textContent = `${randomAge} days`;
-                    confidenceResult.textContent = `${randomConfidence}%`;
+                try {
+                    const base64 = capturedImage.split(',')[1];
+                    const byteChars = atob(base64);
+                    const byteNums = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+                    const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
+                    const formData = new FormData();
+                    formData.append('file', blob, 'larva.jpg');
+
+                    const resp = await fetch(ROBOFLOW_URL, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${ROBOFLOW_KEY}` },
+                        body: formData
+                    });
+                    if (!resp.ok) throw new Error(`Roboflow error ${resp.status}`);
+                    const data = await resp.json();
+                    const predictions = data.predictions || [];
+                    if (predictions.length === 0) {
+                        speciesResult.textContent = 'None';
+                        confidenceResult.textContent = '--';
+                        timestampResult.textContent = '--';
+                        updateStatus('No species detected', '#E65100');
+                        showToast('No species detected');
+                        return;
+                    }
+                    const top = predictions[0];
+                    const species = top.class || 'Unknown';
+                    const confidence = (top.confidence * 100).toFixed(1);
+                    speciesResult.textContent = species;
+                    confidenceResult.textContent = `${confidence}%`;
                     timestampResult.textContent = new Date().toLocaleTimeString();
-                    
-                    updateStatus('Analysis complete', '#1B5E20');
-                    updateResultStatus('Analysis complete · results displayed', '#1B5E20');
-                    
-                    showModal('fa-dna', 'Analysis Complete', `Species: ${randomSpecies}\nEstimated Age: ${randomAge} days\nConfidence: ${randomConfidence}%`);
-                }, 2000);
+
+                    // Send larvaId to Control Center
+                    updateStatus('Sending to Control Center...', '#1565C0');
+                    const sendResult = await sendLarvaId(species);
+                    if (sendResult.success) {
+                        updateStatus('Larva ID sent', '#1B5E20');
+                        showToast('Larva ID sent to Control Center');
+                    } else {
+                        updateStatus('Analysis complete, sync failed', '#E65100');
+                        showToast('Sync failed: ' + sendResult.error);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    updateStatus('Analysis failed', '#C62828');
+                    showToast('Analysis failed: ' + err.message);
+                } finally {
+                    setAnalysisLoading(false);
+                }
             }
 
+            async function sendLarvaId(larvaId) {
+                if (!navigator.geolocation) return { success: false, error: 'Geolocation not supported' };
+                return new Promise((resolve) => {
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        const payload = {
+                            deviceId: DEVICE_ID,
+                            timestamp: new Date().toISOString(),
+                            larvaId: larvaId.toLowerCase(),
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude,
+                            radius: 500
+                        };
+                        try {
+                            const resp = await fetch(CONTROL_CENTER_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                            const result = await resp.json();
+                            resolve({ success: true, result });
+                        } catch (err) {
+                            resolve({ success: false, error: err.message });
+                        }
+                    }, (err) => resolve({ success: false, error: 'Location permission denied' }), {
+                        enableHighAccuracy: true, timeout: 10000, maximumAge: 60000
+                    });
+                });
+            }
+
+            // Event listeners
             startBtn.addEventListener('click', startCamera);
-            stopBtn.addEventListener('click', () => { 
-                stopStream(); 
-                updateStatus('Camera stopped', '#8A9E98');
-            });
+            stopBtn.addEventListener('click', stopStream);
             captureBtn.addEventListener('click', captureImage);
             analyzeBtn.addEventListener('click', analyzeImage);
-
-            // Cleanup on page unload
             window.addEventListener('beforeunload', stopStream);
+
+            // Initial state
             stopStream();
         })();
     </script>
