@@ -345,49 +345,47 @@
             // ---- IMPORTANT: Class ID mapping ----
             // Your model detects: aedes, anopheles, culex
             // Map numeric class IDs (as returned by the model) to species names.
-            // If the model returns strings like "aedes", you can ignore this.
             const CLASS_ID_MAPPING = {
                 0: 'aedes',
                 1: 'anopheles',
                 2: 'culex'
-                // Add more if needed, e.g., 3: 'negative', 4: 'mixed', etc.
+                // If your model has different numeric IDs, update these.
             };
 
             // Allowed species categories for backend
-            const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed', 'other'];
+            const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed']; // removed 'other'
 
             /**
              * Convert raw class value (number or string) to one of the allowed species.
              */
-            function mapToAllowedSpecies(rawClass, predictions) {
-                // If rawClass is a number, try to map via CLASS_ID_MAPPING
-                if (typeof rawClass === 'number') {
-                    if (CLASS_ID_MAPPING.hasOwnProperty(rawClass)) {
-                        return CLASS_ID_MAPPING[rawClass];
+            function mapToAllowedSpecies(rawClass) {
+                // Convert to string for consistent handling
+                const rawStr = String(rawClass);
+
+                // Check if it's a numeric string (e.g., "0", "1", "2")
+                if (/^\d+$/.test(rawStr)) {
+                    const classId = parseInt(rawStr, 10);
+                    if (CLASS_ID_MAPPING.hasOwnProperty(classId)) {
+                        return CLASS_ID_MAPPING[classId];
                     } else {
-                        console.warn('Unknown numeric class ID:', rawClass);
-                        return 'other';
+                        console.warn('Unknown numeric class ID:', classId);
+                        // Return 'unknown' (or you could throw an error)
+                        return 'unknown';
                     }
                 }
 
-                // If rawClass is a string
-                const lower = rawClass.toLowerCase().replace(/[^a-z]/g, '');
-                // Direct match to allowed list
+                // Handle string labels
+                const lower = rawStr.toLowerCase().replace(/[^a-z]/g, '');
                 if (ALLOWED_LARVA.includes(lower)) return lower;
-
-                // Contains keywords
                 if (lower.includes('aedes')) return 'aedes';
                 if (lower.includes('culex')) return 'culex';
                 if (lower.includes('anopheles')) return 'anopheles';
-                if (lower.includes('negative') || lower.includes('none') || lower.includes('no')) return 'negative';
+                if (lower.includes('negative')) return 'negative';
                 if (lower.includes('mixed')) return 'mixed';
 
-                // If no match, but we have predictions and a class_names array
-                if (predictions && predictions.length > 0) {
-                    // Some Roboflow responses include class_names at top level; not used here
-                }
-
-                return 'other';
+                // If nothing matches, return 'unknown'
+                console.warn('Unrecognized class string:', rawStr);
+                return 'unknown';
             }
 
             function showToast(msg) {
@@ -535,10 +533,10 @@
                     if (rawClass === undefined && topPrediction.class_id !== undefined) {
                         rawClass = topPrediction.class_id;
                     }
-                    console.log('Raw class value:', rawClass);
+                    console.log('Raw class value:', rawClass, 'Type:', typeof rawClass);
 
                     // Map to species name
-                    let species = mapToAllowedSpecies(rawClass, predictions);
+                    let species = mapToAllowedSpecies(rawClass);
                     console.log('Mapped species:', species);
 
                     // Handle confidence formatting
