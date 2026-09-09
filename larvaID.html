@@ -332,10 +332,9 @@
             let stream = null;
             let capturedImage = null; // dataURL
 
-            // NEW: Roboflow Workflow API (general-segmentation-api-2)
-            const ROBOFLOW_WORKFLOW_URL = 'https://serverless.roboflow.com/mike-pascua/workflows/general-segmentation-api-2';
-            const ROBOFLOW_API_KEY = 'tytdJy91mpGDBEiW4mTi';
-            // Control Center API endpoint (unchanged from reference)
+            // Roboflow LarvaID model (using api_key query parameter) - CORS-friendly endpoint
+            const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1?api_key=tytdJy91mpGDBEiW4mTi';
+            // Control Center API endpoint
             const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
             const DEVICE_ID = 'LARVAID-001';
             const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed', 'other'];
@@ -427,50 +426,28 @@
                     return;
                 }
                 setAnalysisLoading(true);
-                updateStatus('Analyzing with Roboflow Workflow...', '#1565C0');
+                updateStatus('Analyzing...', '#1565C0');
                 try {
-                    // Extract base64 data (remove data URL prefix)
-                    const base64Data = capturedImage.split(',')[1];
+                    // Convert dataURL to Blob and send as FormData
+                    const base64 = capturedImage.split(',')[1];
+                    const byteChars = atob(base64);
+                    const byteNums = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+                    const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
+                    const formData = new FormData();
+                    formData.append('file', blob, 'larva.jpg');
 
-                    // Prepare workflow payload (base64 image input)
-                    const payload = {
-                        inputs: {
-                            "image": { "type": "base64", "value": base64Data },
-                            "classes": "aedes, anopheles, culex"
-                        }
-                    };
-
-                    // Call Roboflow Workflow API with Authorization header
-                    const resp = await fetch(ROBOFLOW_WORKFLOW_URL, {
+                    const resp = await fetch(ROBOFLOW_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${ROBOFLOW_API_KEY}`
-                        },
-                        body: JSON.stringify(payload)
+                        body: formData
                     });
-
                     if (!resp.ok) {
                         const errText = await resp.text().catch(() => '');
-                        throw new Error(`Roboflow workflow error ${resp.status}${errText ? ': ' + errText : ''}`);
+                        throw new Error(`Roboflow error ${resp.status}${errText ? ': ' + errText : ''}`);
                     }
-
                     const data = await resp.json();
-                    console.log('Roboflow workflow response:', data);
-
-                    // Parse workflow output — adjust based on actual response structure
-                    // The workflow may return outputs under data.outputs or data.predictions
-                    let predictions = [];
-                    if (data.outputs && Array.isArray(data.outputs)) {
-                        predictions = data.outputs;
-                    } else if (data.predictions && Array.isArray(data.predictions)) {
-                        predictions = data.predictions;
-                    } else if (data.outputs && data.outputs.predictions) {
-                        predictions = data.outputs.predictions;
-                    } else if (data.output && Array.isArray(data.output)) {
-                        predictions = data.output;
-                    }
-
+                    console.log('Roboflow response:', data);
+                    const predictions = data.predictions || [];
                     if (predictions.length === 0) {
                         speciesResult.textContent = 'None';
                         confidenceResult.textContent = '--';
@@ -479,22 +456,16 @@
                         showToast('No species detected');
                         return;
                     }
-
-                    // Get top prediction — assume each has class and confidence
                     const top = predictions[0];
-                    let species = top.class || top.species || top.label || 'Unknown';
-                    let confidence = top.confidence ?? top.score ?? 0;
-
-                    // Normalize species
+                    let species = top.class || 'Unknown';
+                    // Normalize to one of the allowed values for the backend
                     species = species.toLowerCase().replace(/[^a-z]/g, '');
                     if (!ALLOWED_LARVA.includes(species)) {
-                        species = 'other';
+                        species = 'other'; // fallback
                     }
-
-                    // Format confidence as percentage
-                    const confidencePct = (confidence * 100).toFixed(1);
+                    const confidence = (top.confidence * 100).toFixed(1);
                     speciesResult.textContent = species;
-                    confidenceResult.textContent = `${confidencePct}%`;
+                    confidenceResult.textContent = `${confidence}%`;
                     timestampResult.textContent = new Date().toLocaleTimeString();
 
                     // Send larvaId to Control Center
