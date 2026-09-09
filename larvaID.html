@@ -341,7 +341,22 @@
             // Control Center API endpoint
             const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
             const DEVICE_ID = 'LARVAID-001';
+            
+            // Allowed species categories for backend
             const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed', 'other'];
+
+            // Function to map any class string to allowed categories
+            function mapToAllowedSpecies(classString) {
+                const lower = classString.toLowerCase().replace(/[^a-z]/g, '');
+                if (lower.includes('aedes')) return 'aedes';
+                if (lower.includes('culex')) return 'culex';
+                if (lower.includes('anopheles')) return 'anopheles';
+                if (lower.includes('negative') || lower.includes('none') || lower.includes('no')) return 'negative';
+                if (lower.includes('mixed')) return 'mixed';
+                // If exact match in allowed list
+                if (ALLOWED_LARVA.includes(lower)) return lower;
+                return 'other';
+            }
 
             function showToast(msg) {
                 toast.textContent = msg;
@@ -475,12 +490,22 @@
                     }
                     const top = predictions[0];
                     let species = top.class || 'Unknown';
-                    // Normalize to one of the allowed values for the backend
-                    species = species.toLowerCase().replace(/[^a-z]/g, '');
-                    if (!ALLOWED_LARVA.includes(species)) {
-                        species = 'other'; // fallback
+                    console.log('Raw species class:', species);
+                    
+                    // Map to allowed categories
+                    species = mapToAllowedSpecies(species);
+                    console.log('Mapped species:', species);
+
+                    // Handle confidence formatting
+                    let confidence = top.confidence;
+                    // If confidence is already a percentage (e.g., 85.2), don't multiply
+                    if (confidence > 1) {
+                        // already percentage
+                        confidence = confidence.toFixed(1);
+                    } else {
+                        // 0-1 range
+                        confidence = (confidence * 100).toFixed(1);
                     }
-                    const confidence = (top.confidence * 100).toFixed(1);
                     speciesResult.textContent = species;
                     confidenceResult.textContent = `${confidence}%`;
                     timestampResult.textContent = new Date().toLocaleTimeString();
