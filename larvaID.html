@@ -336,25 +336,57 @@
             let stream = null;
             let capturedImage = null; // dataURL
 
-            // Roboflow LarvaID model (using api_key query parameter) - CORS-friendly endpoint
+            // Roboflow LarvaID model (CORS-friendly endpoint)
             const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1?api_key=tytdJy91mpGDBEiW4mTi';
             // Control Center API endpoint
             const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
             const DEVICE_ID = 'LARVAID-001';
-            
+
+            // ---- IMPORTANT: Class ID mapping ----
+            // Your model detects: aedes, anopheles, culex
+            // Map numeric class IDs (as returned by the model) to species names.
+            // If the model returns strings like "aedes", you can ignore this.
+            const CLASS_ID_MAPPING = {
+                0: 'aedes',
+                1: 'anopheles',
+                2: 'culex'
+                // Add more if needed, e.g., 3: 'negative', 4: 'mixed', etc.
+            };
+
             // Allowed species categories for backend
             const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed', 'other'];
 
-            // Function to map any class string to allowed categories
-            function mapToAllowedSpecies(classString) {
-                const lower = classString.toLowerCase().replace(/[^a-z]/g, '');
+            /**
+             * Convert raw class value (number or string) to one of the allowed species.
+             */
+            function mapToAllowedSpecies(rawClass, predictions) {
+                // If rawClass is a number, try to map via CLASS_ID_MAPPING
+                if (typeof rawClass === 'number') {
+                    if (CLASS_ID_MAPPING.hasOwnProperty(rawClass)) {
+                        return CLASS_ID_MAPPING[rawClass];
+                    } else {
+                        console.warn('Unknown numeric class ID:', rawClass);
+                        return 'other';
+                    }
+                }
+
+                // If rawClass is a string
+                const lower = rawClass.toLowerCase().replace(/[^a-z]/g, '');
+                // Direct match to allowed list
+                if (ALLOWED_LARVA.includes(lower)) return lower;
+
+                // Contains keywords
                 if (lower.includes('aedes')) return 'aedes';
                 if (lower.includes('culex')) return 'culex';
                 if (lower.includes('anopheles')) return 'anopheles';
                 if (lower.includes('negative') || lower.includes('none') || lower.includes('no')) return 'negative';
                 if (lower.includes('mixed')) return 'mixed';
-                // If exact match in allowed list
-                if (ALLOWED_LARVA.includes(lower)) return lower;
+
+                // If no match, but we have predictions and a class_names array
+                if (predictions && predictions.length > 0) {
+                    // Some Roboflow responses include class_names at top level; not used here
+                }
+
                 return 'other';
             }
 
@@ -479,6 +511,7 @@
                     }
                     const data = await resp.json();
                     console.log('Roboflow response:', data);
+
                     const predictions = data.predictions || [];
                     if (predictions.length === 0) {
                         speciesResult.textContent = 'None';
@@ -488,24 +521,34 @@
                         showToast('No species detected');
                         return;
                     }
-                    const top = predictions[0];
-                    let species = top.class || 'Unknown';
-                    console.log('Raw species class:', species);
-                    
-                    // Map to allowed categories
-                    species = mapToAllowedSpecies(species);
+
+                    // Choose prediction with highest confidence (if multiple)
+                    let topPrediction = predictions[0];
+                    for (const pred of predictions) {
+                        if ((pred.confidence || 0) > (topPrediction.confidence || 0)) {
+                            topPrediction = pred;
+                        }
+                    }
+
+                    // Extract raw class (could be number or string)
+                    let rawClass = topPrediction.class;
+                    if (rawClass === undefined && topPrediction.class_id !== undefined) {
+                        rawClass = topPrediction.class_id;
+                    }
+                    console.log('Raw class value:', rawClass);
+
+                    // Map to species name
+                    let species = mapToAllowedSpecies(rawClass, predictions);
                     console.log('Mapped species:', species);
 
                     // Handle confidence formatting
-                    let confidence = top.confidence;
-                    // If confidence is already a percentage (e.g., 85.2), don't multiply
+                    let confidence = topPrediction.confidence || 0;
                     if (confidence > 1) {
-                        // already percentage
-                        confidence = confidence.toFixed(1);
+                        confidence = confidence.toFixed(1); // already percentage
                     } else {
-                        // 0-1 range
                         confidence = (confidence * 100).toFixed(1);
                     }
+
                     speciesResult.textContent = species;
                     confidenceResult.textContent = `${confidence}%`;
                     timestampResult.textContent = new Date().toLocaleTimeString();
