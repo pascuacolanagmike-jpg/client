@@ -285,6 +285,8 @@
             <div class="camera-controls">
                 <button class="btn-cam primary" id="startCameraBtn"><i class="fas fa-play"></i> Live</button>
                 <button class="btn-cam" id="captureBtn"><i class="fas fa-camera"></i> Capture</button>
+                <button class="btn-cam" id="uploadBtn"><i class="fas fa-image"></i> Image</button>
+                <input type="file" id="imageInput" accept="image/*" hidden>
                 <button class="btn-cam" id="analyzeBtn"><i class="fas fa-microscope"></i> Analyze</button>
                 <button class="btn-cam" id="stopCameraBtn"><i class="fas fa-stop"></i> Stop</button>
             </div>
@@ -322,6 +324,8 @@
             const captureBtn = document.getElementById('captureBtn');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const stopBtn = document.getElementById('stopCameraBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const imageInput = document.getElementById('imageInput');
             const statusMsg = document.getElementById('statusMessage');
             const speciesResult = document.getElementById('speciesResult');
             const confidenceResult = document.getElementById('confidenceResult');
@@ -351,7 +355,7 @@
 
             function setAnalysisLoading(loading) {
                 analysisOverlay.classList.toggle('active', loading);
-                [captureBtn, startBtn, stopBtn, analyzeBtn].forEach(btn => btn.disabled = loading);
+                [captureBtn, uploadBtn, startBtn, stopBtn, analyzeBtn].forEach(btn => btn.disabled = loading);
                 analyzeBtn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> Analyzing' : '<i class="fas fa-microscope"></i> Analyze';
             }
 
@@ -420,9 +424,22 @@
                 showToast('Image captured');
             }
 
+            function uploadImage(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    showImagePreview(ev.target.result);
+                    updateStatus('Image loaded', '#1B5E20');
+                    showToast('Image loaded');
+                };
+                reader.readAsDataURL(file);
+                imageInput.value = '';
+            }
+
             async function analyzeImage() {
                 if (!capturedImage) {
-                    showToast('Please capture an image first');
+                    showToast('Please capture or upload an image first');
                     return;
                 }
                 setAnalysisLoading(true);
@@ -532,6 +549,8 @@
             startBtn.addEventListener('click', startCamera);
             stopBtn.addEventListener('click', stopStream);
             captureBtn.addEventListener('click', captureImage);
+            uploadBtn.addEventListener('click', () => imageInput.click());
+            imageInput.addEventListener('change', uploadImage);
             analyzeBtn.addEventListener('click', analyzeImage);
             window.addEventListener('beforeunload', stopStream);
 
