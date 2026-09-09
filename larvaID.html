@@ -264,6 +264,52 @@
             pointer-events: none;
         }
         .toast.show { opacity: 1; }
+
+        /* Morphological section */
+        .morpho-section {
+            background: #F0F7F4;
+            border-radius: 16px;
+            padding: 0.8rem;
+            border: 1px solid #D0E5DC;
+        }
+        .morpho-header {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--mosquito-green);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .morpho-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .morpho-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .morpho-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .morpho-select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid #C8E6C9;
+            background: white;
+            font-size: 0.8rem;
+            color: var(--text);
+            outline: none;
+        }
+        .morpho-select:focus {
+            border-color: var(--mosquito-accent);
+            box-shadow: 0 0 0 2px rgba(76,175,80,0.2);
+        }
     </style>
 </head>
 <body>
@@ -292,13 +338,59 @@
             </div>
         </div>
 
+        <!-- Morphological Observations Section -->
+        <div class="morpho-section">
+            <div class="morpho-header">
+                <i class="fas fa-eye"></i> Morphological Observations (optional)
+            </div>
+            <div class="morpho-grid">
+                <div class="morpho-row">
+                    <label class="morpho-label">Water surface orientation</label>
+                    <select id="orientationSelect" class="morpho-select">
+                        <option value="">Not observed</option>
+                        <option value="flat">Lies flat / parallel</option>
+                        <option value="angle45">Hangs diagonally (~45°)</option>
+                        <option value="steep">Hangs steeply / vertical</option>
+                    </select>
+                </div>
+                <div class="morpho-row">
+                    <label class="morpho-label">Siphon projection (tail tube)</label>
+                    <select id="siphonSelect" class="morpho-select">
+                        <option value="">Not observed</option>
+                        <option value="none">No visible tube</option>
+                        <option value="short">Short, dark stub</option>
+                        <option value="long">Long, thin tube</option>
+                    </select>
+                </div>
+                <div class="morpho-row">
+                    <label class="morpho-label">Movement & thrashing pattern</label>
+                    <select id="movementSelect" class="morpho-select">
+                        <option value="">Not observed</option>
+                        <option value="darting">Horizontal darting</option>
+                        <option value="s-shaped">S-shaped wiggling</option>
+                        <option value="jerky">Jerky, wriggling</option>
+                    </select>
+                </div>
+                <div class="morpho-row">
+                    <label class="morpho-label">Resting position in container</label>
+                    <select id="restingSelect" class="morpho-select">
+                        <option value="">Not observed</option>
+                        <option value="edges">Gathers along edges/rim</option>
+                        <option value="open_water">Hangs in open water</option>
+                        <option value="clusters">Clusters near surface</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <div class="results-section">
             <div class="results-header"><i class="fas fa-table"></i><span>Classification Results</span></div>
             <table class="result-table">
                 <thead><tr><th>Parameter</th><th>Result</th></tr></thead>
                 <tbody>
                     <tr><td>Species</td><td><span class="result-value" id="speciesResult">--</span></td></tr>
-                    <tr><td>Confidence</td><td><span class="result-value" id="confidenceResult">--</span></td></tr>
+                    <tr><td>AI Confidence</td><td><span class="result-value" id="aiConfidenceResult">--</span></td></tr>
+                    <tr><td>Rule Assessment</td><td><span class="result-value" id="ruleAssessmentResult">--</span></td></tr>
                     <tr><td>Timestamp</td><td><span class="result-value" id="timestampResult">--</span></td></tr>
                 </tbody>
             </table>
@@ -328,53 +420,44 @@
             const imageInput = document.getElementById('imageInput');
             const statusMsg = document.getElementById('statusMessage');
             const speciesResult = document.getElementById('speciesResult');
-            const confidenceResult = document.getElementById('confidenceResult');
+            const aiConfidenceResult = document.getElementById('aiConfidenceResult');
+            const ruleAssessmentResult = document.getElementById('ruleAssessmentResult');
             const timestampResult = document.getElementById('timestampResult');
             const analysisOverlay = document.getElementById('analysisOverlay');
             const toast = document.getElementById('toast');
 
-            let stream = null;
-            let capturedImage = null; // dataURL
+            // Morphological selectors
+            const orientationSelect = document.getElementById('orientationSelect');
+            const siphonSelect = document.getElementById('siphonSelect');
+            const movementSelect = document.getElementById('movementSelect');
+            const restingSelect = document.getElementById('restingSelect');
 
-            // Roboflow LarvaID model (CORS-friendly endpoint)
+            let stream = null;
+            let capturedImage = null;
+
             const ROBOFLOW_URL = 'https://serverless.roboflow.com/larva-aedes/1?api_key=tytdJy91mpGDBEiW4mTi';
-            // Control Center API endpoint
             const CONTROL_CENTER_URL = 'https://panel-control-1ric.onrender.com/api/ingest';
             const DEVICE_ID = 'LARVAID-001';
 
-            // ---- IMPORTANT: Class ID mapping ----
-            // Your model detects: aedes, anopheles, culex
-            // Map numeric class IDs (as returned by the model) to species names.
+            // Class mapping (numeric IDs to species)
             const CLASS_ID_MAPPING = {
                 0: 'aedes',
                 1: 'anopheles',
                 2: 'culex'
-                // If your model has different numeric IDs, update these.
             };
 
-            // Allowed species categories for backend
-            const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed']; // removed 'other'
+            const ALLOWED_LARVA = ['negative', 'aedes', 'culex', 'anopheles', 'mixed'];
 
-            /**
-             * Convert raw class value (number or string) to one of the allowed species.
-             */
             function mapToAllowedSpecies(rawClass) {
-                // Convert to string for consistent handling
                 const rawStr = String(rawClass);
-
-                // Check if it's a numeric string (e.g., "0", "1", "2")
                 if (/^\d+$/.test(rawStr)) {
                     const classId = parseInt(rawStr, 10);
                     if (CLASS_ID_MAPPING.hasOwnProperty(classId)) {
                         return CLASS_ID_MAPPING[classId];
-                    } else {
-                        console.warn('Unknown numeric class ID:', classId);
-                        // Return 'unknown' (or you could throw an error)
-                        return 'unknown';
                     }
+                    console.warn('Unknown numeric class ID:', classId);
+                    return 'unknown';
                 }
-
-                // Handle string labels
                 const lower = rawStr.toLowerCase().replace(/[^a-z]/g, '');
                 if (ALLOWED_LARVA.includes(lower)) return lower;
                 if (lower.includes('aedes')) return 'aedes';
@@ -382,10 +465,57 @@
                 if (lower.includes('anopheles')) return 'anopheles';
                 if (lower.includes('negative')) return 'negative';
                 if (lower.includes('mixed')) return 'mixed';
-
-                // If nothing matches, return 'unknown'
-                console.warn('Unrecognized class string:', rawStr);
                 return 'unknown';
+            }
+
+            // Rule-based scoring
+            function getRuleBasedSpecies() {
+                const scores = { aedes: 0, anopheles: 0, culex: 0 };
+                const observations = [];
+
+                // Orientation
+                const orient = orientationSelect.value;
+                if (orient === 'flat') { scores.anopheles++; observations.push('flat orientation'); }
+                else if (orient === 'angle45') { scores.aedes++; observations.push('45° angle'); }
+                else if (orient === 'steep') { scores.culex++; observations.push('steep angle'); }
+
+                // Siphon
+                const siphon = siphonSelect.value;
+                if (siphon === 'none') { scores.anopheles++; observations.push('no siphon'); }
+                else if (siphon === 'short') { scores.aedes++; observations.push('short siphon'); }
+                else if (siphon === 'long') { scores.culex++; observations.push('long siphon'); }
+
+                // Movement
+                const movement = movementSelect.value;
+                if (movement === 'darting') { scores.anopheles++; observations.push('darting movement'); }
+                else if (movement === 's-shaped') { scores.aedes++; observations.push('S-shaped movement'); }
+                else if (movement === 'jerky') { scores.culex++; observations.push('jerky movement'); }
+
+                // Resting
+                const resting = restingSelect.value;
+                if (resting === 'edges') { scores.anopheles++; observations.push('rests at edges'); }
+                else if (resting === 'open_water') { scores.aedes++; observations.push('rests in open water'); }
+                else if (resting === 'clusters') { scores.culex++; observations.push('rests in clusters'); }
+
+                // Determine highest score
+                let maxScore = 0;
+                let ruleSpecies = null;
+                for (const [species, score] of Object.entries(scores)) {
+                    if (score > maxScore) {
+                        maxScore = score;
+                        ruleSpecies = species;
+                    }
+                }
+
+                if (maxScore === 0) {
+                    return { species: null, score: 0, details: 'No morphological data' };
+                }
+                // If tie, return null (ambiguous)
+                const tied = Object.values(scores).filter(s => s === maxScore).length > 1;
+                if (tied) {
+                    return { species: null, score: maxScore, details: 'Tie between species' };
+                }
+                return { species: ruleSpecies, score: maxScore, details: observations.join(', ') };
             }
 
             function showToast(msg) {
@@ -490,7 +620,7 @@
                 setAnalysisLoading(true);
                 updateStatus('Analyzing...', '#1565C0');
                 try {
-                    // Convert dataURL to Blob and send as FormData
+                    // AI classification
                     const base64 = capturedImage.split(',')[1];
                     const byteChars = atob(base64);
                     const byteNums = new Array(byteChars.length);
@@ -513,14 +643,15 @@
                     const predictions = data.predictions || [];
                     if (predictions.length === 0) {
                         speciesResult.textContent = 'None';
-                        confidenceResult.textContent = '--';
+                        aiConfidenceResult.textContent = '--';
+                        ruleAssessmentResult.textContent = '--';
                         timestampResult.textContent = '--';
                         updateStatus('No species detected', '#E65100');
                         showToast('No species detected');
                         return;
                     }
 
-                    // Choose prediction with highest confidence (if multiple)
+                    // Choose prediction with highest confidence
                     let topPrediction = predictions[0];
                     for (const pred of predictions) {
                         if ((pred.confidence || 0) > (topPrediction.confidence || 0)) {
@@ -528,32 +659,46 @@
                         }
                     }
 
-                    // Extract raw class (could be number or string)
                     let rawClass = topPrediction.class;
                     if (rawClass === undefined && topPrediction.class_id !== undefined) {
                         rawClass = topPrediction.class_id;
                     }
                     console.log('Raw class value:', rawClass, 'Type:', typeof rawClass);
 
-                    // Map to species name
-                    let species = mapToAllowedSpecies(rawClass);
-                    console.log('Mapped species:', species);
+                    const aiSpecies = mapToAllowedSpecies(rawClass);
+                    console.log('AI species:', aiSpecies);
 
-                    // Handle confidence formatting
                     let confidence = topPrediction.confidence || 0;
                     if (confidence > 1) {
-                        confidence = confidence.toFixed(1); // already percentage
+                        confidence = confidence.toFixed(1);
                     } else {
                         confidence = (confidence * 100).toFixed(1);
                     }
+                    aiConfidenceResult.textContent = `${confidence}%`;
 
-                    speciesResult.textContent = species;
-                    confidenceResult.textContent = `${confidence}%`;
+                    // Rule-based assessment
+                    const ruleResult = getRuleBasedSpecies();
+                    console.log('Rule result:', ruleResult);
+
+                    let finalSpecies = aiSpecies;
+                    let ruleDisplay = ruleResult.details || 'No data';
+                    if (ruleResult.species && ruleResult.score > 0) {
+                        // If rule-based confidence is strong (>=2 features) and AI is uncertain (<70%) or different, override
+                        if (ruleResult.score >= 2 || parseFloat(confidence) < 70) {
+                            finalSpecies = ruleResult.species;
+                            ruleDisplay = `Rule override: ${ruleResult.details}`;
+                        } else {
+                            ruleDisplay = `Rules suggest ${ruleResult.species}, but AI kept ${aiSpecies}`;
+                        }
+                    }
+                    ruleAssessmentResult.textContent = ruleDisplay;
+
+                    speciesResult.textContent = finalSpecies;
                     timestampResult.textContent = new Date().toLocaleTimeString();
 
-                    // Send larvaId to Control Center
+                    // Send final species to Control Center
                     updateStatus('Sending to Control Center...', '#1565C0');
-                    const sendResult = await sendLarvaId(species);
+                    const sendResult = await sendLarvaId(finalSpecies);
                     if (sendResult.success) {
                         updateStatus('Larva ID sent', '#1B5E20');
                         showToast('Larva ID sent to Control Center');
