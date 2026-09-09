@@ -450,6 +450,8 @@
                 <button class="btn-audio primary" id="recordBtn"><i class="fas fa-microphone"></i> Record</button>
                 <button class="btn-audio" id="analyzeBtn"><i class="fas fa-chart-line"></i> Analyze</button>
                 <button class="btn-audio" id="stopBtn"><i class="fas fa-stop"></i> Stop</button>
+                <button class="btn-audio" id="uploadBtn"><i class="fas fa-upload"></i> Upload File</button>
+                <input type="file" id="fileInput" accept=".wav,.mp3,.ogg,.m4a,.flac,.aac,.mov,.mp4,.webm,.avi,.mkv,audio/*,video/*" style="display:none;">
             </div>
         </div>
 
@@ -533,6 +535,8 @@
             const recordBtn = document.getElementById('recordBtn');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const stopBtn = document.getElementById('stopBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
             const statusMsg = document.getElementById('statusMessage');
             const resultStatus = document.getElementById('resultStatus');
             
@@ -557,8 +561,6 @@
             let spectrogramData = [];
             const maxSpectrogramFrames = 100;
 
-            // A real spectrogram is built from the microphone FFT.
-            // No synthetic mosquito pattern is drawn before analysis.
             const MAX_FREQ = 2000;
             const ANALYSIS_SECONDS = 6;
 
@@ -570,9 +572,10 @@
             let sourceNode = null;
             let lastDrawTime = 0;
 
+            // API endpoint
+            const API_URL = 'https://rectal-affirmably-suanne.ngrok-free.dev/predict';
+
             function colorMap(value) {
-                // Scientific false-color palette chosen to resemble the reference:
-                // deep violet background -> blue -> cyan/teal -> green -> yellow.
                 const stops = [
                     [0.00, [13, 5, 37]],
                     [0.10, [35, 8, 79]],
@@ -656,7 +659,6 @@
                     );
                 }
 
-                // Faint time divisions, like a scientific spectrogram.
                 for (let s = 1; s < 6; s++) {
                     const x = (s / 6) * width;
                     ctx.beginPath();
@@ -702,8 +704,6 @@
                     if (px >= width) continue;
 
                     for (let y = 0; y < height; y++) {
-                        // Slightly compressed low-frequency scale gives the
-                        // horizontal harmonic structure seen in real acoustic plots.
                         const freq = (1 - y / height) * MAX_FREQ;
                         const bin = Math.min(
                             frame.length - 1,
@@ -711,14 +711,9 @@
                         );
 
                         let value = frame[bin] || 0;
-
-                        // Increase contrast around the noise floor without inventing
-                        // a frequency pattern.
                         value = Math.max(0, (value - 0.025) / 0.975);
                         value = Math.pow(value, 0.62);
 
-                        // A tiny vertical smoothing produces natural-looking bands
-                        // instead of single-pixel speckle.
                         if (bin > 0 && bin < frame.length - 1) {
                             const nearby = (frame[bin - 1] + value + frame[bin + 1]) / 3;
                             value = Math.max(value, nearby * 0.82);
@@ -730,7 +725,6 @@
                     }
                 }
 
-                // Dark left margin for the frequency scale.
                 ctx.fillStyle = 'rgba(16,8,43,0.88)';
                 ctx.fillRect(0, 0, 47, height);
                 drawAxes(ctx, width, height);
@@ -741,10 +735,8 @@
             }
 
             function addSpectralFrame(dataArray) {
-                // Store a copy. The analyzer's Uint8Array is reused each frame.
                 spectrogramFrames.push(Array.from(dataArray));
 
-                // Keep enough history for the visible canvas but don't grow forever.
                 const maxFrames = Math.max(500, Math.ceil(canvasCssWidth || 380) + 20);
                 if (spectrogramFrames.length > maxFrames) {
                     spectrogramFrames.splice(0, spectrogramFrames.length - maxFrames);
@@ -809,7 +801,6 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
 
-                // 2048 gives a useful balance between frequency resolution and smooth scrolling.
                 analyser.fftSize = 2048;
                 analyser.smoothingTimeConstant = 0.18;
                 analyser.minDecibels = -90;
@@ -884,8 +875,6 @@
                 if (isAnalyzing) return;
 
                 try {
-                    // Analyze button now starts the actual live spectral capture.
-                    // This makes the spectrogram appear only after Analyze is clicked.
                     if (!analyser) {
                         await createMicrophoneAnalyser();
                     }
@@ -933,8 +922,6 @@
                 isAnalyzing = false;
                 analysisProgressBar.style.width = '100%';
 
-                // Demo result values remain deterministic-looking rather than changing
-                // randomly every click. Replace these with the trained model output later.
                 const gender = 'Female';
                 const speciesName = 'Aedes aegypti';
                 const size = 'Small (2.5mm)';
@@ -1012,6 +999,96 @@
                 resultStatus.innerHTML = `<i class="fas fa-circle" style="color: ${color};"></i> ${text}`;
             }
 
+            // Function to draw the spectrogram image returned from API onto canvas
+            function drawSpectrogramImage(base64Image) {
+                const img = new Image();
+                img.onload = function() {
+                    const {ctx, width, height} = setupCanvas(true);
+                    ctx.fillStyle = '#10082b';
+                    ctx.fillRect(0, 0, width, height);
+
+                    // Scale image to fit canvas while preserving aspect ratio
+                    const scale = Math.min(width / img.width, height / img.height);
+                    const imgWidth = img.width * scale;
+                    const imgHeight = img.height * scale;
+                    const x = (width - imgWidth) / 2;
+                    const y = (height - imgHeight) / 2;
+
+                    ctx.drawImage(img, x, y, imgWidth, imgHeight);
+                    drawAxes(ctx, width, height);
+                };
+                img.src = 'data:image/png;base64,' + base64Image;
+            }
+
+            // File upload and API call
+            async function uploadAndAnalyzeFile(file) {
+                // Stop any live analysis
+                if (isAnalyzing) {
+                    finishAnalysis();
+                }
+                stopRecording();
+                clearSpectrogram();
+                analysisProgress.classList.add('active');
+                analysisProgressBar.style.width = '0%';
+                updateStatus('Uploading file...', '#1565C0');
+                updateResultStatus('Sending to WingbeatAI...', '#1565C0');
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.detail || `HTTP error ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Update results
+                    genderResult.textContent = data.gender;
+                    speciesResult.textContent = data.species;
+                    confidenceResult.textContent = `${data.confidence}%`;
+
+                    // Body size and wingbeat frequency not provided by API; leave as "--"
+                    sizeResult.textContent = '--';
+                    frequencyResult.textContent = '--';
+
+                    // Display spectrogram image
+                    if (data.spectrogram_png_base64) {
+                        drawSpectrogramImage(data.spectrogram_png_base64);
+                    }
+
+                    analysisProgressBar.style.width = '100%';
+                    updateStatus('Analysis complete', '#1B5E20');
+                    updateResultStatus('File analyzed successfully', '#1B5E20');
+
+                    showModal(
+                        'fa-check-circle',
+                        'Analysis Complete',
+                        `Gender: ${data.gender}\nSpecies: ${data.species}\nConfidence: ${data.confidence}%`
+                    );
+                } catch (error) {
+                    console.error('API error:', error);
+                    updateStatus('Analysis failed', '#E65100');
+                    updateResultStatus('Error during analysis', '#E65100');
+                    showModal(
+                        'fa-exclamation-triangle',
+                        'Analysis Error',
+                        error.message || 'An error occurred while analyzing the file.'
+                    );
+                } finally {
+                    setTimeout(() => {
+                        analysisProgress.classList.remove('active');
+                        analysisProgressBar.style.width = '0%';
+                    }, 1000);
+                }
+            }
+
             modalCloseBtn.addEventListener('click', hideModal);
             modalOverlay.addEventListener('click', (e) => {
                 if (e.target === modalOverlay) hideModal();
@@ -1020,6 +1097,19 @@
             recordBtn.addEventListener('click', startRecording);
             stopBtn.addEventListener('click', stopRecording);
             analyzeBtn.addEventListener('click', analyzeAudio);
+
+            uploadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    uploadAndAnalyzeFile(file);
+                }
+                // Reset file input so the same file can be selected again
+                fileInput.value = '';
+            });
 
             setTimeout(init, 100);
             updateStatus('Audio ready', '#5F7470');
