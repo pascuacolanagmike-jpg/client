@@ -300,7 +300,6 @@
                     <tr><td>Total Eggs</td><td><span class="result-value" id="totalEggsResult">--</span></td></tr>
                     <tr><td>Egg Density</td><td><span class="result-value" id="densityResult">--</span></td></tr>
                     <tr><td>Viable Eggs</td><td><span class="result-value" id="viableResult">--</span></td></tr>
-                    <tr><td>Confidence</td><td><span class="result-value" id="confidenceResult">--</span></td></tr>
                 </tbody>
             </table>
         </div>
@@ -331,7 +330,6 @@
             const totalEggsResult = document.getElementById('totalEggsResult');
             const densityResult = document.getElementById('densityResult');
             const viableResult = document.getElementById('viableResult');
-            const confidenceResult = document.getElementById('confidenceResult');
             const analysisOverlay = document.getElementById('analysisOverlay');
             const toast = document.getElementById('toast');
 
@@ -463,9 +461,6 @@
                     const data = await resp.json();
                     const predictions = data.predictions || [];
                     const totalEggs = predictions.length;
-                    const avgConfidence = totalEggs > 0
-                        ? predictions.reduce((sum, p) => sum + (p.confidence || 0), 0) / totalEggs
-                        : 0;
                     const density = totalEggs / OVITRAP_SURFACE_AREA_CM2;
                     const viableCount = predictions.filter(p => (p.confidence || 0) >= 0.6).length;
                     const viabilityRate = totalEggs > 0 ? (viableCount / totalEggs) * 100 : 0;
@@ -473,7 +468,6 @@
                     totalEggsResult.textContent = `${totalEggs} eggs`;
                     densityResult.textContent = `${density.toFixed(2)} eggs/cm²`;
                     viableResult.textContent = `${viableCount} eggs (${viabilityRate.toFixed(1)}%)`;
-                    confidenceResult.textContent = `${avgConfidence.toFixed(1)}%`;
 
                     // Send egg count to Control Center
                     updateStatus('Sending to Control Center...', '#1565C0');
